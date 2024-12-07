@@ -3,36 +3,28 @@ package com.example.lab6;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.util.Objects;
+
 public class Note implements Parcelable {
     private final int id;
     private final String title;
     private final String content;
-
     private boolean isCompleted;
 
-    public boolean isCompleted() {
-        return isCompleted;
-    }
-
-    public void setCompleted(boolean completed) {
-        isCompleted = completed;
-    }
-
-
+    // Конструктор
     public Note(int id, String title, String content) {
         this.id = id;
         this.title = title;
         this.content = content;
     }
 
+    // Parcelable методы
     protected Note(Parcel in) {
         id = in.readInt();
         title = in.readString();
         content = in.readString();
+        isCompleted = in.readByte() != 0;
     }
-
-    //Это специальное поле, которое обязательно для всех классов, реализующих интерфейс
-    // Parcelable. Оно служит фабрикой для создания объектов из Parcel
 
     public static final Creator<Note> CREATOR = new Creator<Note>() {
         @Override
@@ -51,16 +43,29 @@ public class Note implements Parcelable {
         dest.writeInt(id);
         dest.writeString(title);
         dest.writeString(content);
+        dest.writeByte((byte) (isCompleted ? 1 : 0));
     }
-
-    //Что это: Возвращает флаги для описания объекта. Обычно возвращается 0.
-    //Зачем: Этот метод редко используется, но он обязателен для реализации интерфейса Parcelable.
 
     @Override
     public int describeContents() {
         return 0;
     }
 
+    // Переопределяем equals для сравнения заметок по ID
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Note note = (Note) o;
+        return id == note.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    // Геттеры и сеттеры
     public int getId() {
         return id;
     }
@@ -71,5 +76,13 @@ public class Note implements Parcelable {
 
     public String getContent() {
         return content;
+    }
+
+    public boolean isCompleted() {
+        return isCompleted;
+    }
+
+    public void setCompleted(boolean completed) {
+        isCompleted = completed;
     }
 }

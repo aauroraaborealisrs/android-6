@@ -1,4 +1,3 @@
-
 package com.example.lab6;
 
 import android.os.Bundle;
@@ -19,6 +18,7 @@ import java.util.List;
 public class FragmentNoteList extends Fragment {
     private List<Note> notes = new ArrayList<>();
     private NoteAdapter.OnNoteClickListener onNoteClickListener;
+    private NoteAdapter adapter;
 
     public void setNotes(List<Note> notes) {
         this.notes = notes;
@@ -26,6 +26,10 @@ public class FragmentNoteList extends Fragment {
 
     public void setOnNoteClickListener(NoteAdapter.OnNoteClickListener listener) {
         this.onNoteClickListener = listener;
+    }
+
+    public NoteAdapter getAdapter() {
+        return adapter;
     }
 
     @Nullable
@@ -40,6 +44,9 @@ public class FragmentNoteList extends Fragment {
 
         RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recyclerView.setAdapter(new NoteAdapter(notes, onNoteClickListener)); // Передаем слушатель
+
+        // Инициализируем адаптер и передаем его RecyclerView
+        adapter = new NoteAdapter(notes, onNoteClickListener);
+        recyclerView.setAdapter(adapter);
     }
 }

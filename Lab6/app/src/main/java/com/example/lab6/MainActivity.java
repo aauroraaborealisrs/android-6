@@ -8,6 +8,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -19,6 +20,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private List<Note> notes; // Теперь это поле класса
+    private FragmentNoteList noteListFragment; // Поле для хранения ссылки на фрагмент списка
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,59 +39,98 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         // Создаем список заметок
-        List<Note> notes = Arrays.asList(
+        notes = Arrays.asList( // Поле инициализируется в onCreate
                 new Note(1, "Note 1", "Описание заметки 1"),
                 new Note(2, "Note 2", "Описание заметки 2"),
                 new Note(3, "Note 3", "Описание заметки 3")
         );
 
-
         // Создаем фрагмент списка заметок
-        FragmentNoteList noteListFragment = new FragmentNoteList();
+        noteListFragment = new FragmentNoteList(); // Сохраняем в поле
         noteListFragment.setNotes(notes);
 
         // Инициализируем FragmentManager
         FragmentManager fragmentManager = getSupportFragmentManager();
 
-        // Проверяем, планшет это или телефон
         if (findViewById(R.id.detailsFragmentContainer) != null) {
-
-            Log.d("MainActivity", "Планшетный режим активирован.");
-            // Планшет: отображаем список и фрагмент с деталями
+            // Планшетный режим
             noteListFragment.setOnNoteClickListener(note -> {
-                // Создаем фрагмент с деталями заметки
                 FragmentNoteDetails detailsFragment = new FragmentNoteDetails();
+
+                // Передача данных заметки
                 Bundle bundle = new Bundle();
-                bundle.putParcelable("note", note); // Передаем объект Note через Bundle
+                bundle.putParcelable("note", note);
                 detailsFragment.setArguments(bundle);
 
-                // Заменяем контейнер для деталей на новый фрагмент
-                FragmentTransaction transaction = fragmentManager.beginTransaction();
-                transaction.replace(R.id.detailsFragmentContainer, detailsFragment);
-                transaction.commit();
+                // Обновление состояния заметки через Listener
+                detailsFragment.setOnNoteUpdatedListener(updatedNote -> {
+                    // Обновляем заметку в списке
+                    int index = notes.indexOf(updatedNote);
+                    if (index != -1) {
+                        notes.set(index, updatedNote);
+                        noteListFragment.getAdapter().notifyItemChanged(index);
+                    }
+                });
+
+                // Заменяем фрагмент деталей
+                fragmentManager.beginTransaction()
+                        .replace(R.id.detailsFragmentContainer, detailsFragment)
+                        .commit();
             });
 
-            // Отображаем список заметок в контейнере
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.replace(R.id.listFragmentContainer, noteListFragment);
-            transaction.commit();
+            // Отображение списка
+            fragmentManager.beginTransaction()
+                    .replace(R.id.listFragmentContainer, noteListFragment)
+                    .commit();
         } else {
-            Log.d("MainActivity", "Телефон: ");
-
-            // Телефон: открываем новую активити для деталей
+            // Телефонный режим
             noteListFragment.setOnNoteClickListener(note -> {
-                Log.d("MainActivity", "Передаем Note: " + note.getTitle());
                 Intent intent = new Intent(this, NoteDetailsActivity.class);
-                intent.putExtra("note", note); // Передаем заметку в Intent
-                startActivity(intent);
+                intent.putExtra("note", note);
+                startActivityForResult(intent, 100); // Используем startActivityForResult для передачи данных обратно
             });
 
-            // Отображаем список заметок в основном контейнере
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.replace(R.id.mainFragmentContainer, noteListFragment);
-            transaction.commit();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.mainFragmentContainer, noteListFragment)
+                    .commit();
         }
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        Log.d("MainActivity", "onActivityResult called");
+        Log.d("MainActivity", "requestCode: " + requestCode + ", resultCode: " + resultCode);
+
+        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
+            Note updatedNote = data.getParcelableExtra("updatedNote");
+            if (updatedNote != null) {
+                Log.d("MainActivity", "Updated note received: " + updatedNote.getTitle());
+
+                int index = notes.indexOf(updatedNote);
+                if (index != -1) {
+                    notes.set(index, updatedNote);
+                    Log.d("MainActivity", "Note updated in list at index: " + index);
+
+                    NoteAdapter adapter = noteListFragment.getAdapter();
+                    if (adapter != null) {
+                        adapter.notifyItemChanged(index);
+                        Log.d("MainActivity", "Adapter notified for index: " + index);
+                    } else {
+                        Log.e("MainActivity", "Adapter is null");
+                    }
+                } else {
+                    Log.e("MainActivity", "Updated note not found in list");
+                }
+            } else {
+                Log.e("MainActivity", "Updated note is null");
+            }
+        } else {
+            Log.e("MainActivity", "Intent data is null or result code is not RESULT_OK");
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

@@ -38,13 +38,19 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
+
+        // Устанавливаем заголовок и картинку
         holder.title.setText(note.getTitle());
-        holder.checkbox.setChecked(note.isCompleted());
         holder.image.setImageResource(R.drawable.ic_note);
 
-        // Устанавливаем слушатель клика
+        // Устанавливаем состояние чекбокса, но блокируем взаимодействие
+        holder.checkbox.setChecked(note.isCompleted());
+        holder.checkbox.setEnabled(false); // Блокируем нажатие
+
+        // Устанавливаем слушатель клика на элемент списка
         holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
     }
+
 
     @Override
     public int getItemCount() {

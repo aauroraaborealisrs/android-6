@@ -1,46 +1,3 @@
-//package com.example.lab6;
-//
-//import android.os.Bundle;
-//import android.util.Log;
-//import android.view.LayoutInflater;
-//import android.view.View;
-//import android.view.ViewGroup;
-//import android.widget.TextView;
-//
-//import androidx.annotation.NonNull;
-//import androidx.annotation.Nullable;
-//import androidx.fragment.app.Fragment;
-//
-//public class FragmentNoteDetails extends Fragment {
-//
-//    @Nullable
-//    @Override
-//    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-//        return inflater.inflate(R.layout.fragment_note_details, container, false);
-//    }
-//
-//    @Override
-//    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-//        super.onViewCreated(view, savedInstanceState);
-//
-//        Log.d("FragmentNoteDetails", "Фрагмент создан");
-//        Bundle args = getArguments();
-//        if (args != null) {
-//            Note note = args.getParcelable("note");
-//            if (note != null) {
-//                Log.d("FragmentNoteDetails", "Получены данные: " + note.getTitle());
-//                TextView noteContent = view.findViewById(R.id.noteContent);
-//                noteContent.setText(note.getContent());
-//            } else {
-//                Log.e("FragmentNoteDetails", "Ошибка: Данные не получены");
-//            }
-//        } else {
-//            Log.e("FragmentNoteDetails", "Ошибка: Аргументы не переданы");
-//        }
-//    }
-//
-//}
-
 package com.example.lab6;
 
 import android.os.Bundle;
@@ -56,6 +13,17 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 public class FragmentNoteDetails extends Fragment {
+    private Note note;
+    private OnNoteUpdatedListener listener;
+
+    // Интерфейс для обработки обновлений заметки
+    public interface OnNoteUpdatedListener {
+        void onNoteUpdated(Note updatedNote);
+    }
+
+    public void setOnNoteUpdatedListener(OnNoteUpdatedListener listener) {
+        this.listener = listener;
+    }
 
     @Nullable
     @Override
@@ -67,36 +35,37 @@ public class FragmentNoteDetails extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Log.d("FragmentNoteDetails", "Фрагмент создан");
-
-        // Получаем переданные данные
-        Bundle args = getArguments();
-        if (args != null) {
-            Note note = args.getParcelable("note");
-            if (note != null) {
-                Log.d("FragmentNoteDetails", "Получены данные: " + note.getTitle());
-
-                // Отображаем заголовок
-                TextView noteTitle = view.findViewById(R.id.noteTitle);
-                noteTitle.setText(note.getTitle());
-
-                // Отображаем описание
-                TextView noteContent = view.findViewById(R.id.noteContent);
-                noteContent.setText(note.getContent());
-
-                // Настраиваем чекбокс
-                CheckBox noteCheckbox = view.findViewById(R.id.noteCheckbox);
-                noteCheckbox.setChecked(note.isCompleted());
-                noteCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    // Обновляем состояние заметки
-                    note.setCompleted(isChecked);
-                    Log.d("FragmentNoteDetails", "Заметка обновлена: " + note.getTitle() + ", выполнена: " + isChecked);
-                });
-            } else {
-                Log.e("FragmentNoteDetails", "Ошибка: Данные заметки не получены");
-            }
-        } else {
-            Log.e("FragmentNoteDetails", "Ошибка: Аргументы не переданы");
+        // Получаем заметку из аргументов
+        if (getArguments() != null) {
+            note = getArguments().getParcelable("note");
         }
+
+        if (note == null) {
+            Log.e("FragmentNoteDetails", "Note is null");
+            return;
+        }
+
+        // Инициализация UI-элементов
+        TextView noteTitle = view.findViewById(R.id.noteTitle);
+        noteTitle.setText(note.getTitle());
+
+        TextView noteContent = view.findViewById(R.id.noteContent);
+        noteContent.setText(note.getContent());
+
+        CheckBox noteCheckbox = view.findViewById(R.id.noteCheckbox);
+        noteCheckbox.setChecked(note.isCompleted());
+
+        // Обработка изменения состояния чекбокса
+        noteCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            note.setCompleted(isChecked);
+            if (listener != null) {
+                listener.onNoteUpdated(note); // Сообщаем слушателю об изменении
+            }
+        });
+    }
+
+    // Метод для получения обновлённой заметки
+    public Note getUpdatedNote() {
+        return note;
     }
 }
